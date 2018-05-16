@@ -1,0 +1,3 @@
+[submodule "dxtk11"]
+	path = dxtk11
+	url = https://github.com/Microsoft/DirectXTK.git
