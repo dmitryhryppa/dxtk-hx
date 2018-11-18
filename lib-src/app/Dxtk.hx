@@ -118,9 +118,11 @@ import dxtk.CommonStates;
 class Dxtk {
     public var isRunning(default, null):Bool = false;
     public var vsyncEnabled:Bool = true;
+    
     private var gamepad:Gamepad;
     private var spriteBatch:SpriteBatch;
     private var commonStates:CommonStates;
+    private var content:Content;
     
     public function new () {
 
@@ -190,17 +192,13 @@ class Dxtk {
         this.commonStates = untyped __cpp__('new DirectX::CommonStates(m_device)');
         this.spriteBatch = untyped __cpp__('new DirectX::SpriteBatch(m_deviceContext)');
         this.gamepad = untyped __cpp__('new DirectX::GamePad()');
-        
+        this.content = Content.create(untyped __cpp__('m_device'));
         return true;
     }
 
     public function run (game:IGame):Void {
         if (!isRunning) {
-            untyped __cpp__('
-                bool show_demo_window = true;
-                bool show_another_window = false;
-                ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-            ');
+            game.loadContent(this.content);
             while(true) {
                 untyped __cpp__('
                     if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -226,15 +224,14 @@ class Dxtk {
                     m_deviceContext->RSSetViewports(1, &viewport);
             
                     float clearColor[] = { 0.45f, 0.55f, 1.0f, 1.0f };
-                    m_deviceContext->ClearRenderTargetView(m_renderTargetView, clearColor);
-
-                    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData())
+                    m_deviceContext->ClearRenderTargetView(m_renderTargetView, clearColor)
                 ');
                 
                 game.onGamepadInput(gamepad);
                 game.onMouseState(untyped __cpp__('mouse->GetState()'));
                 game.onUpdate(0.16);
                 game.onDraw(spriteBatch, commonStates);
+                untyped __cpp__('ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData())');
                 
                 untyped __cpp__('m_swapChain->Present({0}, 0); //1 for v-sync', vsyncEnabled ? 1 : 0);
             }

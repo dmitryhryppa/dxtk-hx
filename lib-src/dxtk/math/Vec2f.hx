@@ -7,8 +7,8 @@ import cpp.Float32;
  */
 
 @:unreflective
-@:include('SimpleMath_pch.h')
+@:include('SimpleMath.h')
 @:native('DirectX::SimpleMath::Vector2')
 extern class Vec2f {
-    @:native('DirectX::SimpleMath::Vector2') public static function make(x:Float32, y:Float32):Vector2f;
+    @:native('DirectX::SimpleMath::Vector2') public static function make (x:Float32, y:Float32):Vec2f;
 }
