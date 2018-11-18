@@ -143,7 +143,25 @@ class Dxtk {
             auto screenWidth = GetSystemMetrics(SM_CXSCREEN);
             auto screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-            m_handle = CreateWindow("DirectXTK", {0}.c_str(), WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE, (screenWidth - {1}) / 2, (screenHeight - {2}) / 2, {1}, {2}, nullptr, nullptr, nullptr, nullptr);
+            DWORD style = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE;
+            RECT wnd = {0, 0, {1}, {2}};
+            AdjustWindowRect(&wnd, style, FALSE);
+
+            int w = (wnd.right - wnd.left);
+            int h = (wnd.bottom - wnd.top);
+
+            m_handle = CreateWindow (
+                "DirectXTK", 
+                {0}.c_str(), 
+                style, 
+                (screenWidth - {1}) / 2, (screenHeight - {2}) / 2, 
+                w, 
+                h, 
+                nullptr, 
+                nullptr, 
+                nullptr, 
+                nullptr
+            );
 
             DXGI_SWAP_CHAIN_DESC swapChainDesc;
             std::memset(&swapChainDesc, 0, sizeof(swapChainDesc));
