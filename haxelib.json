@@ -1,0 +1,14 @@
+{
+    "name": "dxtk-hx",
+    "url" : "",
+    "license": "MIT",
+    "tags": ["directx", "d3d", "directxtk", "dxtk", "game"],
+    "description": "A small framework based on DirectXTK",
+    "version": "0.1.0",
+    "classPath": "lib-src",
+    "releasenote": "",
+    "contributors": ["Dmitry Hryppa"],
+    "dependencies": {
+        
+    }
+  }

@@ -9,7 +9,7 @@ package dxtk;
 @:include('GamePad.h')
 @:native('cpp::Pointer<DirectX::GamePad>')
 extern class Gamepad {
-    @:native('ptr->GetState') public function getState(player:Int):GamePadState;
+    @:native('ptr->GetState') public function getState(player:Int):GamepadState;
     @:native('ptr->SetVibration') public function setVibration(player:Int, leftMotor:Float, rightMotor:Float, ?leftTrigger:Float, ?rightTrigger:Float):Void;
     @:native('destroy') public function destroy():Void;
 }
