@@ -15,7 +15,7 @@ import dxtk.MouseState;
 interface IGame {
     //public function loadContent (content:Content):Void;
     public function onGamepadInput (gamepad:Gamepad):Void;
-    public function onMouseInput (state:MouseState):Void;
+    public function onMouseState (state:MouseState):Void;
     public function onUpdate (deltaTime:Float):Void;
     public function onDraw (spriteBatch:SpriteBatch, commonStates:CommonStates):Void;
     public function onDebugGUI ():Void;

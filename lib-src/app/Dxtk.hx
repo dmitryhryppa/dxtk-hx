@@ -1,20 +1,27 @@
 package app;
+import dxtk.MouseState;
 import dxtk.Gamepad;
 import dxtk.SpriteBatch;
 import dxtk.CommonStates;
 
 @:buildXml('
 <set name="dir" value="${haxelib:dxtk-hx}/dxtk11" />
+<set name="dir_imgui" value="${haxelib:dxtk-hx}/imgui" />
 <files id="haxe">
     <compilerflag value="-I${dir}/Inc/"/>
+    <compilerflag value="-I${dir_imgui}/include/"/>
 </files>
 
 <files id="__main__">
     <compilerflag value="-I${dir}/Inc/"/>
-</files>
+    <compilerflag value="-I${dir_imgui}/include/"/>
 
-<files id="directxtk">
-    <compilerflag value="-I${dir}/Inc/"/>
+    <file name="${dir_imgui}/imgui.cpp" />
+    <file name="${dir_imgui}/imgui_demo.cpp" />
+    <file name="${dir_imgui}/imgui_draw.cpp" />
+    <file name="${dir_imgui}/imgui_impl_win32.cpp" />
+    <file name="${dir_imgui}/imgui_impl_dx11.cpp" />
+    <file name="${dir_imgui}/imgui_widgets.cpp" />
 </files>
 
 <target id="haxe" tool="linker" toolid="exe">
@@ -23,8 +30,7 @@ import dxtk.CommonStates;
     <lib name="dxgi.lib" />
     <lib name="RuntimeObject.lib" />
 
-    <lib name="${dir}/Bin/Desktop_2017/Win32/Release/DirectXTK.lib" />
-    <files id="directxtk" />
+    <lib name="${dir}/Bin/Desktop_2017/Win32/Release/DirectXTK.lib" /> 
 </target>
 ')
 
@@ -33,6 +39,10 @@ import dxtk.CommonStates;
     #include <memory>
     #include <d3d11.h>
     #include <Mouse.h>
+
+    #include <imgui.h>
+    #include <imgui_impl_win32.h>
+    #include <imgui_impl_dx11.h>
 ')
 
 @:headerClassCode('
@@ -53,16 +63,15 @@ import dxtk.CommonStates;
 ')
 
 @:cppFileCode('
+    extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
     LRESULT CALLBACK winProc (HWND handle, UINT msg, WPARAM wparam, LPARAM lparam) {
         if (msg == WM_DESTROY || msg == WM_CLOSE) {
             PostQuitMessage(0);
             return 0;
         }
-        
-        //#ifdef MZK_EDITOR_ENABLED
-        //if (ImGui_ImplDX11_WndProcHandler(handle, msg, wparam, lparam)) return true;
-        //#endif // !MZK_EDITOR_ENABLED
-        //if (ImGui_ImplDX11_WndProcHandler(handle, msg, wparam, lparam)) return true;
+
+        if (ImGui_ImplWin32_WndProcHandler(handle, msg, wparam, lparam)) return true;
         
         switch (msg) {
             case WM_KEYDOWN:
@@ -83,12 +92,9 @@ import dxtk.CommonStates;
             case WM_SYSKEYUP:
                 //DirectX::Keyboard::ProcessMessage(msg, wparam, lparam);
                 break;
-
-
-
             case WM_ACTIVATEAPP:
                 //DirectX::Keyboard::ProcessMessage(msg, wparam, lparam);
-                //DirectX::Mouse::ProcessMessage(msg, wparam, lparam);
+                DirectX::Mouse::ProcessMessage(msg, wparam, lparam);
                 break;
             case WM_INPUT:
             case WM_MOUSEMOVE:
@@ -102,7 +108,7 @@ import dxtk.CommonStates;
             case WM_XBUTTONDOWN:
             case WM_XBUTTONUP:
             case WM_MOUSEHOVER:
-                //DirectX::Mouse::ProcessMessage(msg, wparam, lparam);
+                DirectX::Mouse::ProcessMessage(msg, wparam, lparam);
                 break;
         }
 
@@ -115,7 +121,7 @@ class Dxtk {
     private var gamepad:Gamepad;
     private var spriteBatch:SpriteBatch;
     private var commonStates:CommonStates;
-
+    
     public function new () {
 
     }
@@ -163,10 +169,24 @@ class Dxtk {
             }
         
             backbuffer->GetDesc(&m_backBufferDesc);
-            backbuffer->Release()
+            backbuffer->Release();
+
+
+            // Setup Dear ImGui binding
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+
+            ImGui_ImplWin32_Init(m_handle);
+            ImGui_ImplDX11_Init(m_device, m_deviceContext);
+
+            // Setup style
+            //ImGui::StyleColorsClassic();
+            ImGui::StyleColorsDark()
         ', title, width, height, isFullscreen);
 
-        //untyped __cpp__('mouse = std::make_unique<DirectX::Mouse>()');
+        untyped __cpp__('mouse = std::make_unique<DirectX::Mouse>()');
         this.commonStates = untyped __cpp__('new DirectX::CommonStates(m_device)');
         this.spriteBatch = untyped __cpp__('new DirectX::SpriteBatch(m_deviceContext)');
         this.gamepad = untyped __cpp__('new DirectX::GamePad()');
@@ -176,6 +196,11 @@ class Dxtk {
 
     public function run (game:IGame):Void {
         if (!isRunning) {
+            untyped __cpp__('
+                bool show_demo_window = true;
+                bool show_another_window = false;
+                ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+            ');
             while(true) {
                 untyped __cpp__('
                     if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -185,6 +210,16 @@ class Dxtk {
                         TranslateMessage(&msg);
                         DispatchMessage(&msg);
                     }
+
+                    // Start the Dear ImGui frame
+                    ImGui_ImplDX11_NewFrame();
+                    ImGui_ImplWin32_NewFrame();
+                    ImGui::NewFrame()
+                ');
+                game.onDebugGUI();
+                untyped __cpp__('
+                    ImGui::Render();
+
                     m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr);
             
                     auto viewport = CD3D11_VIEWPORT(0.0f, 0.0f, static_cast<float>(m_backBufferDesc.Width), static_cast<float>(m_backBufferDesc.Height));
@@ -192,21 +227,15 @@ class Dxtk {
             
                     float clearColor[] = { 0.45f, 0.55f, 1.0f, 1.0f };
                     m_deviceContext->ClearRenderTargetView(m_renderTargetView, clearColor);
+
+                    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData())
                 ');
                 
                 game.onGamepadInput(gamepad);
-                //game.onMouseHandler(untyped __cpp__('mouse->GetState()'));
+                game.onMouseState(untyped __cpp__('mouse->GetState()'));
                 game.onUpdate(0.16);
                 game.onDraw(spriteBatch, commonStates);
                 
-                
-                /*
-                    #if imgui
-                    system.ptr.imguiBegin();
-                    game.onImgui();
-                    system.ptr.imguiEnd();
-                    #end
-                */
                 untyped __cpp__('m_swapChain->Present({0}, 0); //1 for v-sync', vsyncEnabled ? 1 : 0);
             }
             exit();
@@ -221,5 +250,8 @@ class Dxtk {
             m_deviceContext->Release();
             m_renderTargetView->Release()
         ');
+        
+        untyped __cpp__('{0}->destroy()', spriteBatch);
+        untyped __cpp__('{0}->destroy()', commonStates);
     }
 }
