@@ -39,6 +39,7 @@ import dxtk.CommonStates;
     #include <memory>
     #include <d3d11.h>
     #include <Mouse.h>
+    #include <SpriteFont.h>
 
     #include <imgui.h>
     #include <imgui_impl_win32.h>
@@ -52,7 +53,8 @@ import dxtk.CommonStates;
     int vsync = 1;
 
     std::unique_ptr<DirectX::Mouse> mouse;
-
+    std::unique_ptr<DirectX::SpriteFont> m_font;
+    
     //D3D11 stuff
     IDXGISwapChain *m_swapChain = nullptr;
     ID3D11Device *m_device = nullptr;
@@ -124,8 +126,10 @@ class Dxtk {
     private var commonStates:CommonStates;
     private var content:Content;
     
-    public function new () {
+    private var gameTime:GameTime;
 
+    public function new () {
+        gameTime = new GameTime();
     }
 
     public function init (title:String, width:Int, height:Int, isFullscreen:Bool):Bool {
@@ -218,6 +222,8 @@ class Dxtk {
         if (!isRunning) {
             game.loadContent(this.content);
             while(true) {
+                gameTime.begin();
+
                 untyped __cpp__('
                     if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
                         if (msg.message == WM_QUIT) {
@@ -247,11 +253,13 @@ class Dxtk {
                 
                 game.onGamepadInput(gamepad);
                 game.onMouseState(untyped __cpp__('mouse->GetState()'));
-                game.onUpdate(0.16);
+                game.onUpdate(gameTime);
                 game.onDraw(spriteBatch, commonStates);
                 untyped __cpp__('ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData())');
                 
                 untyped __cpp__('m_swapChain->Present({0}, 0); //1 for v-sync', vsyncEnabled ? 1 : 0);
+
+                gameTime.end();
             }
             exit();
         }
